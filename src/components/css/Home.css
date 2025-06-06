@@ -1,0 +1,19 @@
+/* .home {
+  background: #B5A8D5;
+  background-image: url("https://www.transparenttextures.com/patterns/cubes.png");
+} */
+
+.home .card{
+  color: #164863;
+}
+
+.home footer {
+  font-size: 12px;
+  text-align: center;
+  position: relative;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  clear: both;
+}
+
