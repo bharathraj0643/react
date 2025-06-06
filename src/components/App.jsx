@@ -1,4 +1,4 @@
-import React, { useState, createContext, useRef } from "react";
+import React, { useState, createContext, useRef, useReducer } from "react";
 
 import Header from "./app/Header";
 import Note from "./app/Note";
@@ -9,8 +9,34 @@ export const dataContext = createContext();
 
 function App() {
   const [theme, setTheme] = useState(false);
-  const [notes, setNotes] = useState([]);
   const [update, setUpdate] = useState({ id: null, title: "", content: "" });
+
+  const initialAllNotes = [];
+  function allNotesReducer(state, action) {
+    switch (action.type) {
+      case "addNote": {
+        return [...state, action.newNote];
+      }
+
+      case "deleteNote": {
+        const noteIndex = action.noteIndex;
+        const notes = state.filter((noteItem, index) => {
+          return index !== noteIndex;
+        });
+        return notes;
+      }
+
+      default: {
+        break;
+      }
+    }
+  }
+
+  const [allNotes, dispatchAllNotes] = useReducer(
+    allNotesReducer,
+    initialAllNotes
+  );
+
   const data = "blackbox";
 
   let renders = useRef(0);
@@ -18,24 +44,18 @@ function App() {
   useEffect(() => {
     renders.current++;
     console.log("App: " + renders.current);
-  }, [notes]);
+  }, [allNotes]);
 
   function themeMode() {
     setTheme(!theme);
   }
 
   function addNote(newNote) {
-    setNotes((prevNotes) => {
-      return [...prevNotes, newNote];
-    });
+    dispatchAllNotes({ type: "addNote", newNote: newNote });
   }
 
   function deleteNote(noteIndex) {
-    setNotes((prevNotes) => {
-      return prevNotes.filter((noteItem, index) => {
-        return index !== noteIndex;
-      });
-    });
+    dispatchAllNotes({ type: "deleteNote", noteIndex: noteIndex });
   }
 
   function editId(id, title, content) {
@@ -46,14 +66,14 @@ function App() {
     <>
       <div className="app" data-bs-theme={theme ? "dark" : "light"}>
         <dataContext.Provider
-          value={{ addNote, deleteNote, data, editId, update , setUpdate}}
+          value={{ addNote, deleteNote, data, editId, update, setUpdate }}
         >
           <Header />
           <button onClick={themeMode}>mode</button>
           <div className="container">
             <CreateArea />
             {/* uses addNote */}
-            {notes.map((noteItem, index) => {
+            {allNotes.map((noteItem, index) => {
               return (
                 <Note
                   key={index}

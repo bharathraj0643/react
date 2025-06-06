@@ -1,5 +1,10 @@
-// import React, { useState, useContext } from "react";
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useContext,
+  useReducer,
+} from "react";
 
 import { dataContext } from "../App";
 
@@ -11,60 +16,56 @@ function CreateArea() {
   const { addNote, update, deleteNote, setUpdate } = useContext(dataContext);
 
   const [isExpanded, setExpanded] = useState(false);
-  const [note, setNote] = useState({
-    title: "",
-    content: "",
-  });
+  const initialNote = { title: "", content: "" };
+  function noteReducer(state, action) {
+    switch (action.type) {
+      case "handleChange": {
+        const { name, value } = action.payload;
+        return { ...state, [name]: value };
+      }
+
+      case "submitNote": {
+        if (update.id > -1) {
+          deleteNote(update.id);
+          addNote(state);
+          setUpdate({ id: null, title: "", content: "" });
+          return { title: "", content: "" };
+        } else if (state.content != "") {
+          addNote(state);
+          return { title: "", content: "" };
+        }
+        setExpanded(false);
+      }
+
+      case "handleUpdate": {
+        return { title: update.title, content: update.content };
+      }
+
+      default: {
+        break;
+      }
+    }
+  }
+
+  const [noteState, dispatchNote] = useReducer(noteReducer, initialNote);
+  const { title, content } = noteState;
 
   let renders = useRef(0);
 
   useEffect(() => {
     renders.current++;
     console.log("CreateArea: " + renders.current);
-  }, [note]);
+  }, [noteState]);
 
   let highlightTextArea = useRef();
 
   useEffect(() => {
     highlightTextArea.current.focus();
-    setNote({
-      title: update.title,
-      content: update.content,
-    });
+    dispatchNote({ type: "handleUpdate" });
   }, [update]);
 
   function handleClick() {
     setExpanded(true);
-  }
-
-  function handleChange(event) {
-    const { name, value } = event.target;
-    setNote((prevNote) => {
-      return {
-        ...prevNote,
-        [name]: value,
-      };
-    });
-  }
-
-  function submitNote(event) {
-    if (update.id > -1) {
-      deleteNote(update.id);
-      addNote(note);
-      setNote({
-        title: "",
-        content: "",
-      });
-      setUpdate({ id: null, title: "", content: "" })
-    } else if (note.content != "") {
-      addNote(note); //useContext
-      setNote({
-        title: "",
-        content: "",
-      });
-    }
-    setExpanded(false);
-    event.preventDefault();
   }
 
   return (
@@ -78,8 +79,10 @@ function CreateArea() {
         {isExpanded && (
           <input
             name="title"
-            onChange={handleChange}
-            value={note.title}
+            onChange={(event) => {
+              dispatchNote({ type: "handleChange", payload: event.target });
+            }}
+            value={title}
             placeholder="Title"
           />
         )}
@@ -88,14 +91,21 @@ function CreateArea() {
           ref={highlightTextArea}
           name="content"
           onClick={handleClick}
-          onChange={handleChange}
-          value={note.content}
+          onChange={(event) => {
+            dispatchNote({ type: "handleChange", payload: event.target });
+          }}
+          value={content}
           placeholder="Take a note..."
           rows={isExpanded ? 3 : 1}
         />
 
         <Zoom in={isExpanded ? true : false}>
-          <Fab color="info" onClick={submitNote}>
+          <Fab
+            color="info"
+            onClick={() => {
+              dispatchNote({ type: "submitNote" });
+            }}
+          >
             <AddIcon />
           </Fab>
         </Zoom>
